@@ -1,4 +1,4 @@
-# online(pcml)
+# online(dmap)
 import os
 import shutil
 import time
@@ -75,18 +75,18 @@ def make_optimizer(model, optimizer_config):
         for pn, p in m.named_parameters(recurse=False):
             fpn = '%s.%s' % (mn, pn) if mn else pn  # 完整参数名
 
-            # 先处理PCML与在线分割头，避免后续通用规则再命中
-            if ('pcml_layer' in fpn or 'pcml_modules' in fpn or
-                'pcml_branch_modules' in fpn or 'online_seg_head' in fpn
-                or 'pcml_module' in fpn):
+            # 先处理DMAP与在线分割头，避免后续通用规则再命中
+            if ('dmap_layer' in fpn or 'dmap_modules' in fpn or
+                'dmap_branch_modules' in fpn or 'online_seg_head' in fpn
+                or 'dmap_module' in fpn):
                 
-                # 针对PCML核心参数的精细分类
+                # 针对DMAP核心参数的精细分类
                 if pn in ('W1',):
                     decay.add(fpn)
-                elif pn in ('b1', 'learnable_pcml_lr_weight', 'learnable_token_idx',
-                            'pcml_norm_weight', 'pcml_norm_bias'):
+                elif pn in ('b1', 'learnable_dmap_lr_weight', 'learnable_token_idx',
+                            'dmap_norm_weight', 'dmap_norm_bias'):
                     no_decay.add(fpn)
-                # PCML中的LayerNorm后处理（post_norm）无权重衰减
+                # DMAP中的LayerNorm后处理（post_norm）无权重衰减
                 elif isinstance(m, (LayerNorm, torch.nn.GroupNorm, torch.nn.BatchNorm1d, torch.nn.InstanceNorm1d)):
                     if pn.endswith('weight') or pn.endswith('bias'):
                         no_decay.add(fpn)

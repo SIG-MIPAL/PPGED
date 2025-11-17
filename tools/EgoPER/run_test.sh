@@ -27,4 +27,4 @@ python metric_vis_egoper.py --task pinwheels --dirname pinwheels_aod_b1_n2_smoot
 
 
 # 在线测评脚本
-python metric_vis_egoper.py --dataset EgoPER --dirs EgoPER_taskgraph_pcml --dirname coffee_aod_b1_n2_smooth_causal_gmm_pcml_final --task coffee -ed --online >> log/coffee_online/metric.log
+python metric_vis_egoper.py --dataset EgoPER --dirs EgoPER_taskgraph_dmap --dirname coffee_aod_b1_n2_smooth_causal_gmm_dmap_final --task coffee -ed --online >> log/coffee_online/metric.log

@@ -1,4 +1,4 @@
-# baseline(online+pcml+taskgraph)
+# baseline(online+dmap+taskgraph)
 import copy
 import math
 import os
@@ -369,16 +369,16 @@ class PtTransformer_GMM_CAUSAL_SMOOTH_GCN(nn.Module):
                     'use_gcn' : use_gcn
                 }
             )
-        # enable PCML online injection based on test_cfg
-        pcml_enable = bool(test_cfg.get('pcml_backbone_enable', False))
-        if pcml_enable:
-            self.backbone.enable_pcml(
-                mini_batch_size=int(test_cfg.get('pcml_mini_batch_size', 32)),
-                rope_theta=float(test_cfg.get('pcml_rope_theta', 10000)),
-                inject_stages=list(test_cfg.get('pcml_backbone_stages', ['stem'])),
-                indices=list(test_cfg.get('pcml_backbone_indices', [])),
-                stage_kind=str(test_cfg.get('pcml_stage_kind', 'encoder')),
-                gcn_window_size=int(test_cfg.get('pcml_gcn_window_size', -1))
+        # enable DMAP online injection based on test_cfg
+        dmap_enable = bool(test_cfg.get('dmap_backbone_enable', False))
+        if dmap_enable:
+            self.backbone.enable_dmap(
+                mini_batch_size=int(test_cfg.get('dmap_mini_batch_size', 32)),
+                rope_theta=float(test_cfg.get('dmap_rope_theta', 10000)),
+                inject_stages=list(test_cfg.get('dmap_backbone_stages', ['stem'])),
+                indices=list(test_cfg.get('dmap_backbone_indices', [])),
+                stage_kind=str(test_cfg.get('dmap_stage_kind', 'encoder')),
+                gcn_window_size=int(test_cfg.get('dmap_gcn_window_size', -1))
             )
         if isinstance(embd_dim, (list, tuple)):
             embd_dim = sum(embd_dim)
