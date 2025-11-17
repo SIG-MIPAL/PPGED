@@ -32,7 +32,7 @@ train_cfg: {init_loss_norm: 100, clip_grad_l2norm: 1.0, cls_prior_prob: 0.01, ce
 test_cfg: {voting_thresh: 0.7, pre_nms_topk: 2000, max_seg_num: 200, min_score: 0.001,
   multiclass_nms: true,
   DMAP_backbone_enable: true,
-  DMAP_backbone_stage: stem,          
+  DMAP_backbone_stage: ['stem', 'branch'],         
   DMAP_backbone_indices: [],          
   DMAP_mini_batch_size: 64,           
   DMAP_rope_theta: 10000,            

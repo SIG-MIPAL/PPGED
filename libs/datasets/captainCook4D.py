@@ -140,21 +140,3 @@ class captainCook4D(Dataset):
 
         return data_dict
 
-
-
-# if __name__ == '__main__':
-#     # 为每个任务处理序列
-#     task='1'
-#     dataset = captainCook4D(
-#         is_training=True,
-#         split='train',
-#         max_seq_len=2304,
-#         trunc_thresh=0.5,
-#         crop_ratio=[0.9, 1.0],
-#         task=task,
-#     )
-
-#     print(len(dataset))
-#     for sample in dataset:
-#         print(sample)
-#         assert False

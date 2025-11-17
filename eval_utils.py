@@ -350,7 +350,7 @@ def eval_omission_error(dataset_name, s_preds, s_gts):
     print('Nonrepeat IoU:', sum(nonrepeat_IoU_list) / len(nonrepeat_IoU_list))
     print('Acc:', sum(acc_list) / len(acc_list))
 
-########## usage
+# usage
 # v1 = Video('v1')
 # v1.gt_label = [1,2,3]
 # v1.pred_label = [1,2,3]

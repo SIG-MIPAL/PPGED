@@ -8,8 +8,6 @@ from .models import register_generator
 class BufferList(nn.Module):
     """
     Similar to nn.ParameterList, but for buffers
-
-    Taken from https://github.com/facebookresearch/detectron2/blob/master/detectron2/modeling/anchor_generator.py
     """
 
     def __init__(self, buffers):

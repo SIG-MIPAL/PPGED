@@ -180,54 +180,6 @@ def main(args):
         test_dataset, False, None, 1, cfg['loader']['num_workers']
     )
 
-    # for threshold in range(0, 41):
-    #     results = {
-    #         'video-id': [],
-    #         't-start' : [],
-    #         't-end': [],
-    #         'label': [],
-    #         'score': []
-    #     }
-    #     output_file = os.path.join(args.ckpt, output_name+'%.2f.pkl'%(threshold))
-
-    #     # loop over test set
-    #     for iter_idx, video_list in enumerate(test_loader, 0):
-    #         # forward the model (wo. grad)
-    #         with torch.no_grad():
-                
-    #             # predict segments (boundaries and action steps)
-    #             output = model(video_list)
-    #             num_vids = len(output)
-    #             for vid_idx in range(num_vids):
-    #                 # generate frame-wise results and re-generate segments
-    #                 preds = to_frame_wise(output[vid_idx]['segments'], output[vid_idx]['labels'],
-    #                                     output[vid_idx]['scores'], video_list[vid_idx]['feats'].size(1), 
-    #                                     fps=video_list[vid_idx]['fps'])
-    #                 action_labels, time_stamp_labels = to_segments(preds)
-    #                 video_id = output[vid_idx]['video_id']
-    #                 video_list[vid_idx]['segments'] = torch.tensor(time_stamp_labels)
-    #                 video_list[vid_idx]['labels'] = torch.tensor(action_labels).long()
-
-    #             # perform error detection
-    #             output = model(video_list, mode=args.mode, threshold=threshold)
-
-    #             num_vids = len(output)
-    #             for vid_idx in range(num_vids):
-    #                 if output[vid_idx]['segments'].shape[0] > 0:
-    #                     video_id = output[vid_idx]['video_id']
-    #                     if video_id not in results:
-    #                         results[video_id] = {}
-    #                     results[video_id]['segments'] = output[vid_idx]['segments'].numpy()
-    #                     results[video_id]['label'] = output[vid_idx]['labels'].numpy()
-    #                     results[video_id]['score'] = output[vid_idx]['scores'].numpy()
-
-    #         # printing
-    #         if (iter_idx != 0) and iter_idx % (print_freq) == 0:
-    #             torch.cuda.synchronize()
-    #             print('Threshold:%.3f, Test: [%05d/%05d]\t'%(threshold, iter_idx, len(test_loader)))
-
-    #     with open(output_file, "wb") as f:
-    #         pickle.dump(results, f)
     
     all_results = {threshold: {} for threshold in range(0, 31)}
 

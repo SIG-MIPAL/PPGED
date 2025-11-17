@@ -1,5 +1,3 @@
-# Functions for 1D NMS, modified from:
-# https://github.com/open-mmlab/mmcv/blob/master/mmcv/ops/nms.py
 import torch
 
 import nms_1d_cpu

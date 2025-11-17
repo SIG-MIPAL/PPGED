@@ -1,4 +1,3 @@
-# from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/layers/weight_init.py
 import torch
 import math
 import warnings
@@ -6,7 +5,6 @@ import warnings
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
     # Cut & paste from PyTorch official master until it's in a few official releases - RW
-    # Method based on https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf
     def norm_cdf(x):
         # Computes standard normal cumulative distribution function
         return (1. + math.erf(x / math.sqrt(2.))) / 2.

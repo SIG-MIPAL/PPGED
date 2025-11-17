@@ -1,5 +1,3 @@
-# Modified from official EPIC-Kitchens action detection evaluation code
-# see https://github.com/epic-kitchens/C2-Action-Detection/blob/master/EvaluationCode/evaluate_detection_json_ek100.py
 import os
 import json
 import pandas as pd

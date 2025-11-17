@@ -12,11 +12,6 @@ def sigmoid_focal_loss(
     reduction: str = "none",
 ):
     """
-    Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
-    Taken from
-    https://github.com/facebookresearch/fvcore/blob/master/fvcore/nn/focal_loss.py
-    # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-
     Args:
         inputs: A float tensor of arbitrary shape.
                 The predictions for each example.

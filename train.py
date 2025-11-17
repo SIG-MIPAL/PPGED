@@ -1,7 +1,3 @@
-##############################################################################################
-# The code is modified from ActionFormer: https://github.com/happyharrycn/actionformer_release
-##############################################################################################
-
 # python imports
 import argparse
 import os

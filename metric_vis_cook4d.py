@@ -13,43 +13,6 @@ from tqdm import tqdm
 from libs.datasets.data_utils import to_frame_wise, to_segments
 from eval_utils import Video, Checkpoint, eval_omission_error
 
-# strict version
-# def error_acc(pred, gt, gt_error):
-    
-#     num_correct = 0
-#     num_total = 0
-#     pre_gt = None
-#     pre_gt_error = None
-#     is_pred_error = False
-#     idx = 0
-#     for i in range(len(gt)):
-#         if pre_gt is None:
-#             pre_gt = gt[i]
-#             is_pre_gt_error = True if gt_error[i] == -1 else False
-        
-#         if pred[i] == -1:
-#             is_pred_error = True
-        
-
-#         if pre_gt != gt[i]:
-#             if is_pred_error and is_pre_gt_error:
-#                 num_correct += 1
-#             elif not is_pred_error and not is_pre_gt_error:
-#                 num_correct += 1
-#             is_pred_error = False
-#             pre_gt = gt[i]
-#             is_pre_gt_error = True if gt_error[i] == -1 else False
-#             num_total += 1
-
-#     if is_pred_error and is_pre_gt_error:
-#         num_correct += 1
-#     elif not is_pred_error and not is_pre_gt_error:
-#         num_correct += 1
-#     num_total += 1
-
-#     return num_correct, num_total
-
-# loose version
 def error_acc(pred, gt, gt_error):
     num_correct = 0
     num_total = 0

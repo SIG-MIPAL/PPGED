@@ -1,7 +1,3 @@
-##############################################################################################
-# The code is modified from ActionFormer: https://github.com/happyharrycn/actionformer_release
-##############################################################################################
-# online(DMAP):涉及DMAP都用这个backbone
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -253,17 +249,16 @@ class ConvGCNTransformerBackbone(nn.Module):
             else:
                 x, mask = self.stem[idx](x, mask)
 
-        # gcn 拼接
         if self.use_gcn:
 
-            # 新增：在线推理时，使用因果滑动窗口处理GCN
+            # 在线推理时，使用因果滑动窗口处理GCN
             if self.DMAP_enabled and (not self.training) and self.DMAP_gcn_window_size > 0:
                 B, C_vis, T = x.shape # 获取 Batch, 视觉通道数, 时间长度
                 # 获取GCN的输出通道数
                 C_gcn = self.gcn.n_embd if hasattr(self.gcn, 'n_embd') else x.shape[1] // 7 # 从GCN模块获取或估算
                 win_size = self.DMAP_gcn_window_size
                 
-                # 修复：创建一个形状正确的、用于存储GCN输出的张量
+                # 创建一个形状正确的、用于存储GCN输出的张量
                 # 形状应为 [B, C_gcn, T]
                 x_gcn_full = torch.zeros((B, C_gcn, T), device=x.device, dtype=x.dtype)
 
@@ -274,7 +269,7 @@ class ConvGCNTransformerBackbone(nn.Module):
                     end = t + 1
                     
                     # 对当前窗口的输入数据运行GCN
-                    # 注意：GCN模块本身仍然一次性处理它接收到的切片
+                    # GCN模块本身仍然一次性处理它接收到的切片
                     gcn_out_window = self.gcn(bbox[..., start:end], bbox_class[..., start:end], edge_map[..., start:end])
                     
                     # 只取窗口的最后一个时间点的输出，确保因果性
