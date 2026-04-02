@@ -1,4 +1,4 @@
-# Egocentric Online Error Detection with Procedural Probabilistic Graph
+# Online Error Detection with Procedural Probabilistic Graph in Egocentric Video Stream
 
 ---
 ## Visualization
