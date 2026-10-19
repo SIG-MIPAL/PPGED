@@ -1,4 +1,7 @@
-# online(dmap) dmap
+##############################################################################################
+# The code is modified from ActionFormer: https://github.com/happyharrycn/actionformer_release
+##############################################################################################
+# online(pcml) pcml相关的block都用这个
 import math
 import numpy as np
 

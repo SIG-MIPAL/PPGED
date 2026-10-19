@@ -1,0 +1,42 @@
+dataset_name: EgoPER
+train_split: training
+val_split: validation
+test_split: test
+model_name: LocPointTransformer_GMM_CAUSAL_SMOOTH_GCN_PCML
+devices: ['cuda:0']
+mode: online
+dataset: {num_classes: 12, trunc_thresh: 0.5, crop_ratio: [0.9, 1.0], max_seq_len: 2304,
+  background_ratio: 1.0, use_gcn: true, task: oatmeal}
+model: {
+  # PCML/骨干与GMM设置
+  fpn_type: identity,
+  backbone_type: convGCNTransformer,
+  gcn_type: GCN,
+  backbone_arch: [2, 2, 5],
+  embd_kernel_size: 3,
+  embd_dim: 512,
+  n_head: 8,
+  max_buffer_len_factor: 6.0,
+  n_mha_win_size: 19,
+
+  num_components: 2,
+  smooth_type: gaussian,
+  sigma: 4,
+  task_graph_nodes: 16,
+  task_name: oatmeal,
+
+  # PCML参数
+  use_pcml: true,
+  pcml_num_heads: 8,
+  pcml_mini_batch_size: 64,
+  pcml_rope_theta: 10000.0
+}
+opt: {learning_rate: 0.001, epochs: 200, weight_decay: 0.05, schedule_gamma: 0.7}
+loader: {batch_size: 1}
+train_cfg: {init_loss_norm: 100, clip_grad_l2norm: 1.0, cls_prior_prob: 0.01, center_sample: radius,
+  gmm: true, center_sample_radius: 1.5,
+  dropout: 0.0, droppath: 0.0, label_smoothing: 0.0, cl_weight: 0.0, head_empty_cls: [],
+  contrastive: false, num_negative_segments: 50}
+test_cfg: {voting_thresh: 0.7, pre_nms_topk: 2000, max_seg_num: 200, min_score: 0.001,
+  multiclass_nms: true}
+output_folder: ./ckpt/EgoPER_taskgraph_pcml/

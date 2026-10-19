@@ -1,4 +1,4 @@
-# baseline(online+dmap+taskgraph)
+# baseline(online+pcml+taskgraph)1106最新版本  有任务图的PCML都用这个
 import copy
 import math
 import os
@@ -369,16 +369,15 @@ class PtTransformer_GMM_CAUSAL_SMOOTH_GCN(nn.Module):
                     'use_gcn' : use_gcn
                 }
             )
-        # enable DMAP online injection based on test_cfg
-        dmap_enable = bool(test_cfg.get('dmap_backbone_enable', False))
-        if dmap_enable:
-            self.backbone.enable_dmap(
-                mini_batch_size=int(test_cfg.get('dmap_mini_batch_size', 32)),
-                rope_theta=float(test_cfg.get('dmap_rope_theta', 10000)),
-                inject_stages=list(test_cfg.get('dmap_backbone_stages', ['stem'])),
-                indices=list(test_cfg.get('dmap_backbone_indices', [])),
-                stage_kind=str(test_cfg.get('dmap_stage_kind', 'encoder')),
-                gcn_window_size=int(test_cfg.get('dmap_gcn_window_size', -1))
+        # enable PCML online injection based on test_cfg
+        pcml_enable = bool(test_cfg.get('pcml_backbone_enable', False))
+        if pcml_enable:
+            self.backbone.enable_pcml(
+                mini_batch_size=int(test_cfg.get('pcml_mini_batch_size', 32)),
+                rope_theta=float(test_cfg.get('pcml_rope_theta', 10000)),
+                inject_stage=str(test_cfg.get('pcml_backbone_stage', 'stem')),
+                indices=list(test_cfg.get('pcml_backbone_indices', [])),
+                stage_kind=str(test_cfg.get('pcml_stage_kind', 'encoder'))
             )
         if isinstance(embd_dim, (list, tuple)):
             embd_dim = sum(embd_dim)
@@ -621,7 +620,7 @@ class PtTransformer_GMM_CAUSAL_SMOOTH_GCN(nn.Module):
         device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         # self.num_nodes: coffee: 20, tea: 15, pinwheels: 18, oatmeal: 16, quesadilla: 13 
         net = DO(self.task_graph_nodes, device).to(device)
-        net.load_state_dict(torch.load(f"./{self.task_name}/{self.task_name}_graph.pt"))
+        net.load_state_dict(torch.load(f"/data/hdd1/houtong/PECC-Release/task_graph_learning/DO-{self.task_name}/{self.task_name}_graph.pt"))
         pred_adjacency_matrix = net.get_adjacency_matrix().cpu().detach().numpy()
 
         all_b_output = []  # Store results for all thresholds

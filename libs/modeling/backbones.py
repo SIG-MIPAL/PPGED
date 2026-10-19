@@ -1,3 +1,7 @@
+##############################################################################################
+# The code is modified from ActionFormer: https://github.com/happyharrycn/actionformer_release
+##############################################################################################
+# online(pcml):涉及pcml都用这个backbone
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -5,7 +9,7 @@ from torch.nn import functional as F
 from .models import register_backbone,make_block
 from .blocks import (get_sinusoid_encoding, TransformerBlock, MaskedConv1D,
                      ConvBlock, LayerNorm, GCNBlock,GCNAttetionBlock)
-from .DMAP import DMAPLinear, DMAPCache
+from .PCML import PCMLLinear, PCMLCache
 
 # action segmentation backbone with GCN
 @register_backbone("convGCNTransformer")
@@ -47,18 +51,15 @@ class ConvGCNTransformerBackbone(nn.Module):
         self.use_rel_pe = use_rel_pe
         self.use_gcn = use_gcn
         self.n_head = n_head
-        # ---- DMAP online injection toggles ----
-        self.DMAP_enabled = False
-        # self.DMAP_inject_stage = 'stem'  # 'stem' | 'branch'
-        self.DMAP_inject_stages = [] 
-        self.DMAP_indices = []           # indices to apply; empty => all
-        self.DMAP_mini_batch_size = 32
-        self.DMAP_rope_theta = 10000
-        self.DMAP_stage_kind = 'encoder' # 'encoder' or 'decoder'
-        self.DMAP_module = None
-        self.DMAP_cache = None
-        # 新增：GCN 在线推理的窗口大小
-        self.DMAP_gcn_window_size = -1   # -1 表示禁用在线模式
+        # ---- PCML online injection toggles ----
+        self.pcml_enabled = False
+        self.pcml_inject_stage = 'stem'  # 'stem' | 'branch'
+        self.pcml_indices = []           # indices to apply; empty => all
+        self.pcml_mini_batch_size = 32
+        self.pcml_rope_theta = 10000
+        self.pcml_stage_kind = 'encoder' # 'encoder' or 'decoder'
+        self.pcml_module = None
+        self.pcml_cache = None
 
         # feature projection
         self.n_in = n_in
@@ -156,49 +157,48 @@ class ConvGCNTransformerBackbone(nn.Module):
 
     
 
-    def enable_DMAP(self, mini_batch_size=32, rope_theta=10000, inject_stages=None, indices=None, stage_kind='encoder', gcn_window_size=-1):
-        self.DMAP_enabled = True
-        self.DMAP_mini_batch_size = mini_batch_size
-        self.DMAP_rope_theta = rope_theta
-        self.DMAP_inject_stage = list(inject_stages) if inject_stages is not None else []
-        self.DMAP_indices = list(indices) if indices is not None else []
-        self.DMAP_stage_kind = stage_kind
-        self.DMAP_gcn_window_size = gcn_window_size
+    def enable_pcml(self, mini_batch_size=32, rope_theta=10000, inject_stage='stem', indices=None, stage_kind='encoder'):
+        self.pcml_enabled = True
+        self.pcml_mini_batch_size = mini_batch_size
+        self.pcml_rope_theta = rope_theta
+        self.pcml_inject_stage = inject_stage
+        self.pcml_indices = list(indices) if indices is not None else []
+        self.pcml_stage_kind = stage_kind
 
-    def _apply_DMAP(self, x, mask):
-        # x: [B, C, T] -> DMAP expects [B, T, C]
+    def _apply_pcml(self, x, mask):
+        # x: [B, C, T] -> PCML expects [B, T, C]
         B, C, T = x.shape
         # print(f"[DEBUG] 1x-----: x.device={x.device}")
         device = x.device
 
-        # 对齐已有 DMAP_module 到当前 device（设备变化时重置缓存）
-        if self.DMAP_module is not None:
+        # 对齐已有 pcml_module 到当前 device（设备变化时重置缓存）
+        if self.pcml_module is not None:
             try:
-                module_device = next(self.DMAP_module.parameters()).device
+                module_device = next(self.pcml_module.parameters()).device
             except StopIteration:
                 module_device = device
             if module_device != device:
-                self.DMAP_module.to(device)
-                self.DMAP_cache = None  # 设备变化时缓存作废
+                self.pcml_module.to(device)
+                self.pcml_cache = None  # 设备变化时缓存作废
 
-        # lazy-init DMAP 模块（按通道数），并立即迁移到当前 device
-        if (self.DMAP_module is None) or (getattr(self.DMAP_module, 'hidden_size', None) != C):
-            self.DMAP_module = DMAPLinear(
-                self.n_head, C, self.DMAP_mini_batch_size, self.DMAP_rope_theta, device, self.DMAP_stage_kind
+        # lazy-init PCML 模块（按通道数），并立即迁移到当前 device
+        if (self.pcml_module is None) or (getattr(self.pcml_module, 'hidden_size', None) != C):
+            self.pcml_module = PCMLLinear(
+                self.n_head, C, self.pcml_mini_batch_size, self.pcml_rope_theta, device, self.pcml_stage_kind
             )
-            self.DMAP_module.to(device)
-            self.DMAP_cache = None  # 新模块创建后重置缓存
+            self.pcml_module.to(device)
+            self.pcml_cache = None  # 新模块创建后重置缓存
 
         # lazy-init/重建缓存（按 batch size 和设备）
-        if (self.DMAP_cache is None) or (getattr(self.DMAP_cache, 'DMAP_params_dict', None) is None) or (self.DMAP_cache.DMAP_params_dict["W1_states"].shape[0] != B):
-            self.DMAP_cache = DMAPCache(self.DMAP_module, batch_size=B, mini_batch_size=self.DMAP_mini_batch_size, device=device)
+        if (self.pcml_cache is None) or (getattr(self.pcml_cache, 'pcml_params_dict', None) is None) or (self.pcml_cache.pcml_params_dict["W1_states"].shape[0] != B):
+            self.pcml_cache = PCMLCache(self.pcml_module, batch_size=B, mini_batch_size=self.pcml_mini_batch_size, device=device)
 
         position_ids = torch.arange(T, device=device).unsqueeze(0).expand(B, T)
         # print(f"[DEBUG] 3position_ids-----: position_ids.device={position_ids.device}")
         x_bt = x.transpose(1, 2)  # [B, T, C]
         # print(f"[DEBUG] 2x_bt-----: x_bt.device={x_bt.device}")
 
-        out_bt = self.DMAP_module(x_bt, None, position_ids, self.DMAP_cache)  # [B, T, C]
+        out_bt = self.pcml_module(x_bt, None, position_ids, self.pcml_cache)  # [B, T, C]
         # print(f"[DEBUG] out_bt-----: out_bt.device={out_bt.device}")
         out_bt = out_bt.to(device)
         return out_bt.transpose(1, 2)  # [B, C, T]
@@ -241,45 +241,17 @@ class ConvGCNTransformerBackbone(nn.Module):
 
         # stem transformer
         for idx in range(len(self.stem)):
-            if self.DMAP_enabled and (not self.training) and 'stem' in self.DMAP_inject_stages \
-               and (len(self.DMAP_indices) == 0 or idx in self.DMAP_indices):
-                # print(f"[DEBUG] before DMAP stem[{idx}]: x.device={x.device}")
-                x = self._apply_DMAP(x, mask)    # 在线更新
-                # print(f"[DEBUG] after  DMAP stem[{idx}]: x.device={x.device}")
+            if self.pcml_enabled and (not self.training) and self.pcml_inject_stage == 'stem' \
+               and (len(self.pcml_indices) == 0 or idx in self.pcml_indices):
+                # print(f"[DEBUG] before PCML stem[{idx}]: x.device={x.device}")
+                x = self._apply_pcml(x, mask)    # 在线更新
+                # print(f"[DEBUG] after  PCML stem[{idx}]: x.device={x.device}")
             else:
                 x, mask = self.stem[idx](x, mask)
 
+        # gcn 拼接
         if self.use_gcn:
-
-            # 在线推理时，使用因果滑动窗口处理GCN
-            if self.DMAP_enabled and (not self.training) and self.DMAP_gcn_window_size > 0:
-                B, C_vis, T = x.shape # 获取 Batch, 视觉通道数, 时间长度
-                # 获取GCN的输出通道数
-                C_gcn = self.gcn.n_embd if hasattr(self.gcn, 'n_embd') else x.shape[1] // 7 # 从GCN模块获取或估算
-                win_size = self.DMAP_gcn_window_size
-                
-                # 创建一个形状正确的、用于存储GCN输出的张量
-                # 形状应为 [B, C_gcn, T]
-                x_gcn_full = torch.zeros((B, C_gcn, T), device=x.device, dtype=x.dtype)
-
-                # 以滑动窗口的方式进行因果计算
-                for t in range(T):
-                    # 定义当前窗口的起始和结束点
-                    start = max(0, t - win_size + 1)
-                    end = t + 1
-                    
-                    # 对当前窗口的输入数据运行GCN
-                    # GCN模块本身仍然一次性处理它接收到的切片
-                    gcn_out_window = self.gcn(bbox[..., start:end], bbox_class[..., start:end], edge_map[..., start:end])
-                    
-                    # 只取窗口的最后一个时间点的输出，确保因果性
-                    # gcn_out_window 的形状是 [B, C_gcn, window_length]
-                    # 我们需要的是最后一个时间步，即索引为 -1
-                    x_gcn_full[..., t] = gcn_out_window[..., -1]
-                
-                x_gcn = x_gcn_full
-            else:
-                x_gcn = self.gcn(bbox, bbox_class, edge_map)
+            x_gcn = self.gcn(bbox, bbox_class, edge_map)
             # print(f"[DEBUG] x.device = {x.device}")
             # print(f"[DEBUG] x_gcn.device = {x_gcn.device}")
             x = torch.cat((x, x_gcn), dim=1)
@@ -289,10 +261,10 @@ class ConvGCNTransformerBackbone(nn.Module):
         # branch
         for idx in range(len(self.branch)):
             x, mask = self.branch[idx](x, mask)
-            if self.DMAP_enabled and (not self.training) and 'branch' in self.DMAP_inject_stages \
-               and (len(self.DMAP_indices) == 0 or idx in self.DMAP_indices):
+            if self.pcml_enabled and (not self.training) and self.pcml_inject_stage == 'branch' \
+               and (len(self.pcml_indices) == 0 or idx in self.pcml_indices):
                 
-                x = self._apply_DMAP(x, mask)    # 在线更新
+                x = self._apply_pcml(x, mask)    # 在线更新
             out_feats += (x, ); out_masks += (mask, )
         return out_feats, out_masks
 

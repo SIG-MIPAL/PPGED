@@ -1,3 +1,7 @@
+##############################################################################################
+# The code is modified from ActionFormer: https://github.com/happyharrycn/actionformer_release
+##############################################################################################
+
 # python imports
 import argparse
 import os
@@ -102,22 +106,16 @@ def main(args):
 
             # 获取模型的状态字典
             state_dict = checkpoint['state_dict']
-
-            # 创建要删除的参数的列表
-            # keys_to_remove = []
-            # for i in range(14):  # 假设有 0 到 10 的 GMMs
-            #     keys_to_remove.append(f'module.GMMs.{i}.mu')
-            #     keys_to_remove.append(f'module.GMMs.{i}.var')
-            #     keys_to_remove.append(f'module.GMMs.{i}.pi')
-
-            # # 删除要跳过的参数
-            # for key in keys_to_remove:
-            #     if key in state_dict:
-            #         del state_dict[key]
-
             # 加载更新后的状态字典
             model.load_state_dict(state_dict, strict=False)
-            model_ema.module.load_state_dict(checkpoint['state_dict_ema'], strict=False)
+
+            # 修复：ModelEma 没有 .module；直接加载到 shadow
+            if 'state_dict_ema' in checkpoint:
+                model_ema.shadow = checkpoint['state_dict_ema']
+            else:
+                # 若旧 ckpt 不含 EMA，回退为当前模型权重
+                model_ema.set(model)
+
             print("=> loaded checkpoint '{:s}' (epoch {:d}".format(
                 args.resume, checkpoint['epoch']
             ))
@@ -154,7 +152,8 @@ def main(args):
             print_freq = args.print_freq,
             use_contrastive = cfg['train_cfg']['contrastive'],
             batch_size = cfg['loader']['batch_size'],
-            max_videos = args.maxvideos
+            max_videos = args.maxvideos,
+            mode = cfg.get('mode', 'offline')  # 新增：从配置读取训练模式
         )
 
         # save ckpt once in a while
@@ -162,9 +161,6 @@ def main(args):
             ((epoch + 1) == max_epochs) or
             ((args.ckpt_freq > 0) and ((epoch + 1) % args.ckpt_freq == 0))
         ):
-            # if cfg['train_cfg']['gmm']:
-
-            
             save_states = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
@@ -172,7 +168,9 @@ def main(args):
                 'optimizer': optimizer.state_dict(),
             }
 
-            save_states['state_dict_ema'] = model_ema.module.state_dict()
+            # 修复：ModelEma 没有 .module；保存 shadow 作为 EMA 权重
+            save_states['state_dict_ema'] = model_ema.shadow
+
             if (epoch + 1) > int(max_epochs * 0.85):
                 print('saving checkpoint...')
                 save_checkpoint(
